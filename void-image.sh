@@ -3,7 +3,7 @@
 set -e
 
 apt update
-apt install -y git gcc make pkg-config libz-dev libssl-dev libarchive-dev
+apt install -y git gcc make pkg-config zlib1g-dev libssl-dev libarchive-dev
 if ! type xbps-install 2>/dev/null; then
   XBPS_SRC=`mktemp -d /tmp/xbps.XXX`
   git clone https://github.com/voidlinux/xbps.git $XBPS_SRC
