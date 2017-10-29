@@ -19,7 +19,7 @@ xbps:src:pull() {
 xbps:src:install() {
   if ! type xbps-install 2>/dev/null; then
     pushd $XBPS_SRC
-    ./configure --prefix=/
+    ./configure
     make
     make install
     popd
@@ -51,11 +51,13 @@ void:wordpress() {
 
 sys:deps:install
 xbps:src:pull
-xbps:src:install
 
 VOID_IMG=`mktemp -d /tmp/void.XXX`
 mkdir -p $VOID_IMG/var/db/xbps/keys
 cp -v $XBPS_SRC/data/*.plist $VOID_IMG/var/db/xbps/keys
+xbps:src:install
+echo /usr/local/lib >/etc/ld.so.conf.d/usrlocal.conf
+ldconfig
 
 void:bootstrap
 void:container
