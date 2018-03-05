@@ -46,13 +46,15 @@ void:container() {
 
 void:wordpress() {
   xbps-install -y -S -R http://repo3.voidlinux.eu/current -r $VOID_IMG \
-    nginx mariadb mariadb-client php-fpm php-mysql libmagick-devel
+    curl nginx mariadb mariadb-client php-fpm php-mysql libmagick-devel
+  curl https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o $VOID_IMG/usr/local/bin/wp
+  php wp-cli.phar --info
 }
 
 sys:deps:install
 xbps:src:pull
 
-VOID_IMG=`mktemp -d /tmp/void.XXX`
+VOID_IMG=${VOID_IMG:-`mktemp -d /tmp/void.XXX`}
 mkdir -p $VOID_IMG/var/db/xbps/keys
 cp -v $XBPS_SRC/data/*.plist $VOID_IMG/var/db/xbps/keys
 xbps:src:install
