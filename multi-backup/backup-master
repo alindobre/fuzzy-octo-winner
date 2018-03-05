@@ -1,0 +1,46 @@
+#!/bin/bash
+
+exec &> >(logger -t backup-master-$$ -e)
+set -e
+shopt -s nullglob extglob
+
+BACKUPDIR=/mnt/backup
+. /etc/backup.conf
+
+backupdir() {
+  local DATE BACKUPPFX=$1 SRCDIR=$2
+  printf -v DATE "%(%Y-%m-%d-%H)T"
+  [[ -d $BACKUPDIR/$BACKUPPFX-$DATE ]] && printf -v DATE "%(%Y-%m-%d-%H-%M)T"
+  [[ -d $BACKUPDIR/$BACKUPPFX-$DATE ]] && printf -v DATE "%(%Y-%m-%d-%H-%M-%S)T"
+  [[ ! -d $BACKUPDIR/$BACKUPPFX-$DATE ]]
+  [[ -d $BACKUPDIR ]] || mkdir -p $BACKUPDIR
+  ARGS=(--rsync-path="nocache nice -n 19 ionice -c2 -n7 rsync")
+  pushd $BACKUPDIR >/dev/null
+  BACKUPS=( $BACKUPPFX-????-??-??-??* )
+  popd >/dev/null
+  (( ${#BACKUPS[@]} > 0 )) && [[ -d $BACKUPDIR/${BACKUPS[-1]} ]] &&
+    ARGS+=(--link-dest="$BACKUPDIR/${BACKUPS[-1]}/")
+  [[ $SRCDIR == */ ]] || SRCDIR=$SRCDIR/
+  rsync -aHXxOc "${ARGS[@]}" \
+        root@$BACKUPSRC:$SRCDIR $BACKUPDIR/$BACKUPPFX-current/
+  mv $BACKUPDIR/$BACKUPPFX-current $BACKUPDIR/$BACKUPPFX-$DATE
+}
+
+[[ $1 == daily ]] && backupdir rootfs /
+backupdir ${BACKUPNAME}www $WWWPATH
+
+printf -v DATE "%(%Y-%m-%d-%H)T"
+[[ -f $BACKUPDIR/${BACKUPNAME}db-$DATE ]] && printf -v DATE "%(%Y-%m-%d-%H-%M)T"
+[[ -f $BACKUPDIR/${BACKUPNAME}db-$DATE ]] && printf -v DATE "%(%Y-%m-%d-%H-%M-%S)T"
+[[ ! -f $BACKUPDIR/${BACKUPNAME}db-$DATE ]]
+ssh root@$BACKUPSRC mysqldump -h localhost -u $SQLUSER --password="$SQLPASS" \
+    --add-drop-table $SQLDB | xz -z -c >$BACKUPDIR/${BACKUPNAME}db-$DATE.xz
+
+ssh root@backup1.remote "test -d $BACKUPDIR || mkdir -p $BACKUPDIR"
+ssh root@backup2.remote "test -d $BACKUPDIR || mkdir -p $BACKUPDIR"
+rsync -aHXxO $BACKUPDIR/ root@backup1.remote:$BACKUPDIR/
+rsync -aHXxO $BACKUPDIR/ root@backup2.remote:$BACKUPDIR/
+
+find $BACKUPDIR -maxdepth 1 -mindepth 1 -mtime 30 -exec echo cleanup master '{}' \; -exec rm -fr '{}' \;
+ssh root@backup1.remote "find $BACKUPDIR -maxdepth 1 -mindepth 1 -mtime 30 -exec echo cleanup backup1 '{}' \; -exec rm -fr '{}' \;"
+ssh root@backup2.remote "find $BACKUPDIR -maxdepth 1 -mindepth 1 -mtime 30 -exec echo cleanup backup2 '{}' \; -exec rm -fr '{}' \;"
