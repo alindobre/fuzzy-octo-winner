@@ -1,6 +1,10 @@
 #!/bin/bash
 
 set -e
+shopt -s extglob
+CONTAINER=
+[[ $1 == -c ]] && CONTAINER=1
+[[ $1 == @(-h|--help) ]] && echo usage: $0 [ -c ] && exit
 
 sys:deps:install() {
   case `lsb_release -i -s` in
@@ -31,9 +35,9 @@ void:bootstrap() {
   xbps-install -y -S -R http://repo3.voidlinux.eu/current -r $VOID_IMG base-voidstrap
 }
 
-void:container() {
+void:initial:config() {
   local SERVICE
-  echo VIRTUALIZATION=contain >>$VOID_IMG/etc/rc.conf
+  [[ $CONTAINER ]] && echo VIRTUALIZATION=contain >>$VOID_IMG/etc/rc.conf
   rm -fv $VOID_IMG//etc/runit/runsvdir/default/*
   for SERVICE in agetty-console dhcpcd-eth0 sshd; do
     ln -svfn /etc/sv/$SERVICE $VOID_IMG/etc/runit/runsvdir/default/$SERVICE
@@ -42,13 +46,6 @@ void:container() {
   ssh-add -L >> $VOID_IMG/root/.ssh/authorized_keys
   chmod 700 $VOID_IMG/root/.ssh
   chmod 600 $VOID_IMG/root/.ssh/authorized_keys
-}
-
-void:wordpress() {
-  xbps-install -y -S -R http://repo3.voidlinux.eu/current -r $VOID_IMG \
-    curl nginx mariadb mariadb-client php-fpm php-mysql libmagick-devel
-  curl https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o $VOID_IMG/usr/local/bin/wp
-  php wp-cli.phar --info
 }
 
 sys:deps:install
@@ -62,7 +59,6 @@ echo /usr/local/lib >/etc/ld.so.conf.d/usrlocal.conf
 ldconfig
 
 void:bootstrap
-void:container
-void:wordpress
+void:initial:config
 
 echo Image is available at $VOID_IMG
