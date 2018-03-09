@@ -48,8 +48,14 @@ void:initial:config() {
   chmod 600 $VOID_IMG/root/.ssh/authorized_keys
 }
 
+image:cleanup() {
+  umount -R $MOUNT
+  losetup -D
+}
+
 guest:image() {
   local SIZE IMAGE LOOP MOUNT BIND
+  trap image:cleanup ERR
   read SIZE _ <<< `du -xbs $VOID_IMG`
   SIZE=$(( (SIZE/512) * 3 / 2 + 4 + 1024 ))
   IMAGE=$VOID_IMG-loop
@@ -75,6 +81,7 @@ EOF
   chroot $MOUNT env GRUB_DISABLE_OS_PROBER=true \
     grub-mkconfig -o /boot/grub/grub.cfg
   chroot $MOUNT grub-install --modules=part_gpt $LOOP
+  trap "" ERR
   umount -R $MOUNT
   losetup -D
 }
