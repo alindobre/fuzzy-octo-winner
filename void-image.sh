@@ -32,7 +32,7 @@ xbps:src:install() {
 }
 
 void:bootstrap() {
-  xbps-install -y -S -R http://repo.voidlinux.eu/current -r $VOID_IMG base-voidstrap grub linux
+  xbps-install -y -S -R http://repo.voidlinux.eu/current -r $VOID_IMG base-voidstrap grub linux python
 }
 
 void:initial:config() {
@@ -128,7 +128,7 @@ exit 0
 # MARKER-START-rc.firstboot-SCRIPT
 #!/bin/bash
 
-set -ex
+set -e
 shopt -s nullglob
 
 DISKS=(/dev/[hsv]da)
@@ -143,8 +143,9 @@ SIZEGB=$(( SIZE / (1024*1024*2) ))
 (( SIZEGB > 20 )) && SWAPGB=10
 SWAPSTART=$(( SIZE - (SWAPGB * (1024*1024*2)) ))
 
-sfdisk -d ${DISKS[0]} | grep -v -e ^first-lba: -e ^last-lba \
-  | sfdisk -f ${DISKS[0]}
+sfdisk -d ${DISKS[0]} | grep -v -e ^first-lba: -e ^last-lba: \
+  | sfdisk -f ${DISKS[0]} || :
+partx -u ${DISKS[0]}
 sfdisk -f -a ${DISKS[0]} <<<"start=$SWAPSTART"
 sfdisk -f -N 2 ${DISKS[0]} <<<", +"
 partx -u ${DISKS[0]}
