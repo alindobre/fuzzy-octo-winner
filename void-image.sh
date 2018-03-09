@@ -32,7 +32,7 @@ xbps:src:install() {
 }
 
 void:bootstrap() {
-  xbps-install -y -S -R http://repo3.voidlinux.eu/current -r $VOID_IMG base-voidstrap
+  xbps-install -y -S -R http://repo.voidlinux.eu/current -r $VOID_IMG base-voidstrap grub linux
 }
 
 void:initial:config() {
@@ -48,6 +48,37 @@ void:initial:config() {
   chmod 600 $VOID_IMG/root/.ssh/authorized_keys
 }
 
+guest:image() {
+  local SIZE IMAGE LOOP MOUNT BIND
+  read SIZE _ <<< `du -xbs $VOID_IMG`
+  SIZE=$(( (SIZE/512) * 3 / 2 + 4 + 1024 ))
+  IMAGE=$VOID_IMG-loop
+  MOUNT=$VOID_IMG-mount
+  dd if=/dev/zero count=$SIZE of=$IMAGE
+  sfdisk -f $IMAGE <<EOF
+label: gpt
+unit: sectors
+type=4, size=2048, attrs="LegacyBIOSBootable"
+type=24
+# type=19, size=
+EOF
+  losetup -P -f $IMAGE
+  LOOP=`losetup -l -n -O NAME -j $IMAGE`
+  mkfs.xfs -L voidroot ${LOOP}p2
+  mkdir $MOUNT
+  mount ${LOOP}p2 $MOUNT
+  rsync -vaHXx $VOID_IMG/ $MOUNT/
+  for BIND in /{sys,proc,dev}; do
+    mount --rbind --make-rprivate $BIND $MOUNT$BIND
+  done
+  mkdir $MOUNT/boot/grub
+  chroot $MOUNT env GRUB_DISABLE_OS_PROBER=true \
+    grub-mkconfig -o /boot/grub/grub.cfg
+  chroot $MOUNT grub-install --modules=part_gpt $LOOP
+  umount -R $MOUNT
+  losetup -D
+}
+
 sys:deps:install
 xbps:src:pull
 
@@ -60,5 +91,6 @@ ldconfig
 
 void:bootstrap
 void:initial:config
+guest:image
 
 echo Image is available at $VOID_IMG
