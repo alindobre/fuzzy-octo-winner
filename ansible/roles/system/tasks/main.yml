@@ -1,0 +1,13 @@
+---
+- name: set hostname
+  copy: content=bwiz dest=/etc/hostname
+
+- name: setup bash as interactive shell via ssh
+  copy:
+    src: profile.d-bash-interactive.sh
+    dest: /etc/profile.d/bash-interactive.sh
+
+- name: setup bash prompt
+  copy:
+    src: bashrc.d-ps1.sh
+    dest: /etc/bash/bashrc.d/ps1.sh
