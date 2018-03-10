@@ -1,0 +1,13 @@
+---
+- name: install wordpress dependencies
+  xbps:
+    name: '{{ item }}'
+    update_cache: yes
+    force: true
+    state: latest
+  with_items:
+    - php
+    - nginx
+    - mariadb
+    - php-fpm
+    - php-mysql
