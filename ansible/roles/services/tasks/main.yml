@@ -1,0 +1,6 @@
+---
+- name: enable & start nginx service
+  runit:
+    name: nginx
+    state: started
+    enabled: yes
