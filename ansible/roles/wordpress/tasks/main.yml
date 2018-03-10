@@ -1,0 +1,14 @@
+---
+- name: Check /var/www existance and ownership
+  file:
+    path: /var/www
+    state: directory
+    mode: 0750
+    owner: nginx
+    group: nginx
+
+- name: Extract WordPress
+  unarchive:
+    remote_src: yes
+    src: https://wordpress.org/latest.tar.gz
+    dest: /var/www/
