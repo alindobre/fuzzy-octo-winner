@@ -1,6 +1,11 @@
 ---
-- name: enable & start nginx service
+- name: enable and start services
   runit:
-    name: nginx
+    name: '{{ item }}'
     state: started
     enabled: yes
+  with_items:
+    - mysqld
+    - php-fpm
+    - nginx
+    - rsyslogd

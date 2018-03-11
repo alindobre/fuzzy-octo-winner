@@ -1,5 +1,5 @@
 ---
-- name: Check /var/www existance and ownership
+- name: check /var/www existance and ownership
   file:
     path: /var/www
     state: directory
@@ -7,7 +7,7 @@
     owner: nginx
     group: nginx
 
-- name: Extract WordPress
+- name: extract wordpress
   unarchive:
     remote_src: yes
     src: https://wordpress.org/latest.tar.gz

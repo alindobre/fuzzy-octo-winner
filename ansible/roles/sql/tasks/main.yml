@@ -1,0 +1,24 @@
+---
+- name: get database name
+  command: cred-bwiz dbname
+  delegate_to: localhost
+  register: wpdb
+
+- name: get database user
+  command: cred-bwiz dbuser
+  delegate_to: localhost
+  register: wpus
+
+- name: get database password
+  command: cred-bwiz dbpass
+  delegate_to: localhost
+  register: wppw
+
+- name: create sql database
+  mysql_db: name={{ wpdb.stdout }} state=present
+
+- name: create sql user
+  mysql_user:
+    name={{ wpus.stdout }}
+    password={{ wppw.stdout }}
+    priv=*.*:ALL

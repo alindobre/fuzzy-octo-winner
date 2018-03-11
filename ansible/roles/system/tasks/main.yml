@@ -1,6 +1,8 @@
 ---
+# FIXME: use variable instead of hardcoded bwiz
 - name: set hostname
-  copy: content=bwiz dest=/etc/hostname
+  shell: hostname bwiz && cp /proc/sys/kernel/hostname /etc/hostname
+  when: ansible_hostname != "bwiz"
 
 - name: setup bash as interactive shell via ssh
   copy:
@@ -11,3 +13,16 @@
   copy:
     src: bashrc.d-ps1.sh
     dest: /etc/bash/bashrc.d/ps1.sh
+
+- name: get system root password
+  command: cred-bwiz sysrootpass
+  delegate_to: localhost
+  register: rtpw
+
+- name: check root password
+  fail:
+    msg: "empty root password"
+  when: rtpw.stdout|length == 0
+
+- name: set root password
+  user: name=root password={{ rtpw.stdout }}

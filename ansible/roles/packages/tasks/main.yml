@@ -1,4 +1,15 @@
 ---
+- name: install required system/admin packages
+  xbps:
+    name: '{{ item }}'
+    update_cache: yes
+    force: true
+    state: latest
+  with_items:
+    - vim
+    - python-mysqlclient
+    - rsyslog
+
 - name: install wordpress dependencies
   xbps:
     name: '{{ item }}'

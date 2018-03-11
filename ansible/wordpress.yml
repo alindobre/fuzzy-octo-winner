@@ -1,6 +1,7 @@
 - hosts: bashwizard.com
   roles:
     - system
-    - wpdeps
+    - packages
     - wordpress
     - services
+    - sql
