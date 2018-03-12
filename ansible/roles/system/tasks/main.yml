@@ -13,16 +13,3 @@
   copy:
     src: bashrc.d-ps1.sh
     dest: /etc/bash/bashrc.d/ps1.sh
-
-- name: get system root password
-  command: cred-bwiz sysrootpass
-  delegate_to: localhost
-  register: rtpw
-
-- name: check root password
-  fail:
-    msg: "empty root password"
-  when: rtpw.stdout|length == 0
-
-- name: set root password
-  user: name=root password={{ rtpw.stdout }}
