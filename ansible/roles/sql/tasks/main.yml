@@ -1,24 +1,74 @@
 ---
-- name: get database name
+# Parts of this inspired by the Ansible role at
+#   https://github.com/bertvv/ansible-role-mariadb
+- name: check if root password is set
+  shell: mysqladmin -u root status
+  changed_when: false
+  failed_when: false
+  register: sql_root_pwd_check
+
+- name: get sql root password
+  command: cred-bwiz dbrootpass
+  delegate_to: localhost
+  register: sqpw
+  changed_when: False
+
+- name: set sql root password for the first time
+  mysql_user:
+    name: root
+    password: "{{ sqpw.stdout }}"
+    host_all: yes
+    state: present
+  when: sql_root_pwd_check.rc == 0
+
+- name: remove sql anonymous users
+  mysql_user:
+    name: ''
+    host_all: yes
+    login_user: root
+    login_password: "{{ sqpw.stdout }}"
+    state: absent
+
+- name: remove the initial test database
+  mysql_db:
+    name: test
+    login_user: root
+    login_password: "{{ sqpw.stdout }}"
+    state: absent
+
+- name: delete remaining test databases
+  delete_test_dbs:
+    rootpw: "{{ sqpw.stdout }}"
+
+- name: get wordpress database name
   command: cred-bwiz dbname
   delegate_to: localhost
   register: wpdb
+  changed_when: False
 
-- name: get database user
+- name: get wordpress database user
   command: cred-bwiz dbuser
   delegate_to: localhost
   register: wpus
+  changed_when: False
 
-- name: get database password
+- name: get wordpress database password
   command: cred-bwiz dbpass
   delegate_to: localhost
   register: wppw
+  changed_when: False
 
-- name: create sql database
-  mysql_db: name={{ wpdb.stdout }} state=present
+- name: create wordpress sql database
+  mysql_db:
+    name: "{{ wpdb.stdout }}"
+    state: present
+    login_user: root
+    login_password: "{{ sqpw.stdout }}"
 
-- name: create sql user
+- name: create wordpress sql user
   mysql_user:
-    name={{ wpus.stdout }}
-    password={{ wppw.stdout }}
-    priv=*.*:ALL
+    name: "{{ wpus.stdout }}"
+    password: "{{ wppw.stdout }}"
+    priv: "{{ wpdb.stdout }}.*:ALL"
+    login_user: root
+    login_password: "{{ sqpw.stdout }}"
