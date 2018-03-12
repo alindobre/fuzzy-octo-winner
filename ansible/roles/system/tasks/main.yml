@@ -13,3 +13,10 @@
   copy:
     src: bashrc.d-ps1.sh
     dest: /etc/bash/bashrc.d/ps1.sh
+
+# https://mariadb.com/kb/en/library/configuring-swappiness/
+- name: setup sysctl swapiness=1
+  sysctl:
+    name: vm.swappiness
+    value: 1
+    sysctl_file: /etc/sysctl.d/mariadb.conf
