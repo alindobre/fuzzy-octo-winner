@@ -8,3 +8,6 @@ Typical execution should be inside a virgin Ubuntu current LTS (16.04) via:
 ```
 curl https://raw.githubusercontent.com/alindobre/fuzzy-octo-winner/master/void-image.sh | bash
 ```
+
+## Ansible
+[Ansible automation rules](ansible/README.md)
